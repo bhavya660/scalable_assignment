@@ -1,0 +1,129 @@
+openapi: 3.0.0
+info:
+  title: User Service
+  description: API for user service
+  version: 1.0.0
+
+paths:
+  /register:
+    post:
+      summary: Register a new user
+      description: Allows a user to register by providing a username, password, and role ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The username for the new user.
+                password:
+                  type: string
+                  description: The password for the new user.
+                role_id:
+                  type: integer
+                  description: The role ID for the new user.
+              required:
+                - username
+                - password
+                - role_id
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User registered successfully"
+        '400':
+          description: Invalid input or missing required fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Missing required fields"
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User already exists"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error registering user"
+  
+  /login:
+    post:
+      summary: Login a user
+      description: Allows a user to login with their username and password to receive a token.
+      operationId: handleUserLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The username of the user logging in.
+                password:
+                  type: string
+                  description: The password of the user logging in.
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login successful"
+                  token:
+                    type: string
+                    description: The authentication token for the user.
+                    example: "abcdef1234567890"
+        '400':
+          description: Missing required fields in request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Missing required fields"
+        '401':
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid username or password"

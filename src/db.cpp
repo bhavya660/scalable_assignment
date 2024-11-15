@@ -2,6 +2,7 @@
 #include "db.h"
 #include <sqlite3.h>
 #include <iostream>
+#include <tuple>
 
 sqlite3* db = nullptr;
 
@@ -117,6 +118,50 @@ bool getUser(const std::string& username, std::string& password, int& roleId) {
     bool userFound = false;
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        roleId = sqlite3_column_int(stmt, 1);
+        userFound = true;
+    }
+
+    sqlite3_finalize(stmt);
+    return userFound;
+}
+
+// Function to retrieve all users from the database
+bool getAllUsers(std::vector<std::tuple<std::string, std::string, int>>& users) {
+    const char* sql = "SELECT username, password, role_id FROM users;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, 0) != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        std::string username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        std::string password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        int roleId = sqlite3_column_int(stmt, 2);
+        users.push_back(std::make_tuple(username, password, roleId));
+    }
+
+    sqlite3_finalize(stmt);
+    return true;
+}
+
+// Function to retrieve a user by username from the database
+bool getUserByUsername(const std::string& username, std::string& storedPassword, int& roleId) {
+    const char* sql = "SELECT password, role_id FROM users WHERE username = ?;";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, 0) != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
+
+    bool userFound = false;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        storedPassword = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
         roleId = sqlite3_column_int(stmt, 1);
         userFound = true;
     }

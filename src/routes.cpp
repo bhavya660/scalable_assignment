@@ -7,8 +7,58 @@
 #include "Logger.h"
 #include <openssl/sha.h>
 #include <iomanip>
+#include <regex>
 
 using namespace std;
+
+// Function to handle fetching all users or a specific user by username
+void handleGetUsers(FCGX_Request& request, const std::string& username) {
+    Logger logger("/home/girish/logs/app.log", 1024 * 1024); // Log file with 1MB max size
+    logger.log(Logger::LogLevel::DEBUG, "handleGetUsers()");
+
+    if (username.empty()) {
+        // Retrieve all users
+        std::vector<std::tuple<std::string, std::string, int>> users;
+        if (!getAllUsers(users)) {
+            sendResponse(request, 500, "Error retrieving users");
+            return;
+        }
+
+        Json::Value jsonResponse;
+        Json::Value usersArray(Json::arrayValue);
+
+        for (const auto& user : users) {
+            Json::Value userJson;
+            userJson["username"] = std::get<0>(user);
+            userJson["role_id"] = std::get<2>(user);
+            usersArray.append(userJson);
+        }
+
+        jsonResponse["status"] = 200;
+        jsonResponse["users"] = usersArray;
+
+        Json::StreamWriterBuilder writer;
+        std::string responseBody = Json::writeString(writer, jsonResponse);
+        sendResponse(request, 200, responseBody);
+    } else {
+        // Retrieve a specific user by username
+        std::string storedPassword;
+        int roleId;
+        if (!getUserByUsername(username, storedPassword, roleId)) {
+            sendResponse(request, 404, "User not found");
+            return;
+        }
+
+        Json::Value jsonResponse;
+        jsonResponse["status"] = 200;
+        jsonResponse["user"]["username"] = username;
+        jsonResponse["user"]["role_id"] = roleId;
+
+        Json::StreamWriterBuilder writer;
+        std::string responseBody = Json::writeString(writer, jsonResponse);
+        sendResponse(request, 200, responseBody);
+    }
+}
 
 // Function to handle user registration
 void handleUserRegistration(FCGX_Request& request) {

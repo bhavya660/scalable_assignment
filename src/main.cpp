@@ -30,16 +30,16 @@ int main()
 
         logger.log(Logger::LogLevel::INFO,  "request method : %s, request uri : %s", requestMethod, requestUri);
 
-        if (strcmp(requestMethod, "POST") == 0 && strcmp(requestUri, "/register") == 0)
-        {
+        if (strcmp(requestMethod, "POST") == 0 && strcmp(requestUri, "/register") == 0) {
             handleUserRegistration(request);
-        }
-        else if (strcmp(requestMethod, "POST") == 0 && strcmp(requestUri, "/login") == 0)
-        {
+        } else if (strcmp(requestMethod, "POST") == 0 && strcmp(requestUri, "/login") == 0) {
             handleUserLogin(request);
-        }
-        else
-        {
+        } else if (strcmp(requestMethod, "GET") == 0 && strcmp(requestUri, "/users") == 0) {
+            handleGetUsers(request);
+        } else if (strcmp(requestMethod, "GET") == 0 && strncmp(requestUri, "/users/", 7) == 0) {
+            std::string username = requestUri + 7;
+            handleGetUsers(request, username);
+        } else {
             sendResponse(request, 404, "Not Found");
         }
         FCGX_Finish_r(&request);

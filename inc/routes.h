@@ -6,6 +6,7 @@
 
 void handleUserRegistration(FCGX_Request& request);
 void handleUserLogin(FCGX_Request& request);
+void handleGetUsers(FCGX_Request& request, const std::string& username = "");
 void sendResponse(FCGX_Request& request, int statusCode, const std::string& message);
 
 #endif

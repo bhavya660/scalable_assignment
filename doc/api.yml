@@ -8,7 +8,7 @@ paths:
   /register:
     post:
       summary: Register a new user
-      description: Allows a user to register by providing a username, password, and role ID.
+      description: Allows a user to register by providing user details and optionally restaurant information if the role is `RESTAURANT_OWNER`.
       requestBody:
         required: true
         content:
@@ -25,6 +25,15 @@ paths:
                 role_id:
                   type: integer
                   description: The role ID for the new user.
+                restaurantName:
+                  type: string
+                  description: The name of the restaurant (required for `RESTAURANT_OWNER` role).
+                contactNumber:
+                  type: string
+                  description: The contact number of the restaurant (required for `RESTAURANT_OWNER` role).
+                address:
+                  type: string
+                  description: The address of the restaurant (required for `RESTAURANT_OWNER` role).
               required:
                 - username
                 - password
@@ -127,3 +136,87 @@ paths:
                   message:
                     type: string
                     example: "Invalid username or password"
+
+paths:
+  /users:
+    get:
+      summary: Get all users
+      description: Retrieve a list of all users with their usernames and role IDs.
+      responses:
+        '200':
+          description: A list of users.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        username:
+                          type: string
+                          example: "john_doe"
+                        role_id:
+                          type: integer
+                          example: 2
+        '500':
+          description: Internal server error while retrieving users.
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Error retrieving users"
+  /users/{user_id}:
+    get:
+      summary: Get user by ID
+      description: Retrieve details of a specific user by their ID.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The ID of the user to retrieve.
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: User details retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                    example: "john_doe"
+                  roleId:
+                    type: integer
+                    example: 2
+                  restaurantName:
+                    type: string
+                    example: "Doe's Diner"
+                  contactNumber:
+                    type: string
+                    example: "+1234567890"
+                  address:
+                    type: string
+                    example: "123 Elm Street, Springfield"
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "User not found"
+        '500':
+          description: Internal server error while retrieving the user.
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Error retrieving user"

@@ -191,6 +191,8 @@ void handleUserRegistration(FCGX_Request& request) {
 
 // Function to handle user login and authentication
 void handleUserLogin(FCGX_Request& request) {
+    Logger logger("/home/girish/logs/app.log", 1024 * 1024); // Log file with 1MB max size
+    logger.log(Logger::LogLevel::DEBUG, "handleUserLogin()");
     
     char* contentLengthStr = FCGX_GetParam("CONTENT_LENGTH", request.envp);
     int contentLength = contentLengthStr ? atoi(contentLengthStr) : 0;
@@ -231,22 +233,38 @@ void handleUserLogin(FCGX_Request& request) {
     std::string storedPassword;
     int roleId;
     if (!getUser(username, storedPassword, roleId)) {
+        logger.log(Logger::LogLevel::DEBUG, "Invalid username or password");
         sendResponse(request, 401, "Invalid username or password");
         return;
     }
 
+     // Hashing the password
+    unsigned char hash_stored[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256_stored;
+    SHA256_Init(&sha256_stored);
+    SHA256_Update(&sha256_stored, storedPassword.c_str(), storedPassword.size());
+    SHA256_Final(hash_stored, &sha256_stored);
+
+    std::stringstream ss_stored;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        ss_stored << std::hex << std::setw(2) << std::setfill('0') << (int)hash_stored[i];
+    }
+    std::string stored_password_hash = ss.str();
+
+    logger.log(Logger::LogLevel::DEBUG, "stored : %s, password_hash = %s", stored_password_hash.c_str(), password_hash.c_str());
+
+
     // Check password and generate token if successful
-    if (storedPassword == password_hash) {
-        std::string token = generateToken(username);
+    if (stored_password_hash == password_hash) {
         Json::Value responseData;
         responseData["message"] = "Login successful";
-        responseData["token"] = token;
 
         // Convert JSON response to string
         Json::StreamWriterBuilder writer;
         std::string responseBody = Json::writeString(writer, responseData);
         sendResponse(request, 200, responseBody);
     } else {
+        logger.log(Logger::LogLevel::DEBUG, "Invalid username or password-1");
         sendResponse(request, 401, "Invalid username or password");
     }
 }

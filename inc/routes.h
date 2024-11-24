@@ -4,6 +4,8 @@
 #include <fcgi_stdio.h>
 #include <string>
 
+#define RESTAURANT_OWNER 5
+
 void handleUserRegistration(FCGX_Request& request);
 void handleUserLogin(FCGX_Request& request);
 void handleGetUsers(FCGX_Request& request, const std::string& username = "");

@@ -2,9 +2,18 @@
 #define AUTH_H
 
 #include <string>
+#include <fcgi_stdio.h>
+#include <bits/stdc++.h>
+#include <openssl/md5.h>
 
-std::string generateToken(const std::string& username);
+std::string md5(const std::string &input);
 
-bool validateToken(const std::string& token);
+std::map<std::string, std::string> parse_authorization_header(const std::string &authHeader);
+
+bool validate_digest(const char *method, const char *uri, const char *authHeader);
+
+void send_auth_challenge(FCGX_Request &request);
+
+std::string generate_nonce();
 
 #endif 

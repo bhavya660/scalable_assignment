@@ -16,8 +16,11 @@ void handleGetUsers(FCGX_Request& request, const std::string& username) {
     Logger logger("/home/girish/logs/app.log", 1024 * 1024); // Log file with 1MB max size
     logger.log(Logger::LogLevel::DEBUG, "handleGetUsers()");
 
-    if (username.empty()) {
-        // Retrieve all users
+    const char *requestUri = FCGX_GetParam("REQUEST_URI", request.envp);
+    logger.log(Logger::LogLevel::DEBUG, "%s, username  : %s", requestUri, username);
+
+    if(strcmp(requestUri, "/users") == 0)
+    {
         std::vector<std::tuple<std::string, std::string, int>> users;
         if (!getAllUsers(users)) {
             sendResponse(request, 500, "Error retrieving users");
@@ -40,19 +43,48 @@ void handleGetUsers(FCGX_Request& request, const std::string& username) {
         Json::StreamWriterBuilder writer;
         std::string responseBody = Json::writeString(writer, jsonResponse);
         sendResponse(request, 200, responseBody);
-    } else {
-        // Retrieve a specific user by username
+    }
+    else
+    {
+        std::string Uri(requestUri);
+        std::string path;
+        int id;
+        std::string username;
         std::string storedPassword;
         int roleId;
-        if (!getUserByUsername(username, storedPassword, roleId)) {
+        std::string restaurantName;
+        std::string contactNumber;
+        std::string address;
+        
+        size_t pos = Uri.find_last_of('/');
+        if (pos != std::string::npos) {
+            path = Uri.substr(0, pos);
+            std::string idStr = Uri.substr(pos + 1);
+            id = std::stoi(idStr);
+        }
+
+        if (!getUserById(id, username, storedPassword, roleId, restaurantName, contactNumber, address)) {
             sendResponse(request, 404, "User not found");
             return;
         }
 
+        logger.log(Logger::LogLevel::DEBUG, "\n id: %d, username : %s, storedPassword : %s, roleId : %d, restaurantName : %s, contactNumber : %s, address : %s \n", id, username.c_str(), storedPassword.c_str(), roleId, restaurantName.c_str(), contactNumber.c_str(), address.c_str());
+
         Json::Value jsonResponse;
-        jsonResponse["status"] = 200;
-        jsonResponse["user"]["username"] = username;
-        jsonResponse["user"]["role_id"] = roleId;
+
+        if(restaurantName.empty())
+        {
+            jsonResponse["username"] = username;
+            jsonResponse["roleId"] = roleId;     
+        }
+        else
+        {
+            jsonResponse["username"] = username;
+            jsonResponse["roleId"] = roleId;
+            jsonResponse["restaurantName"] = restaurantName;
+            jsonResponse["contactNumber"] = contactNumber;
+            jsonResponse["address"] = address;
+        }
 
         Json::StreamWriterBuilder writer;
         std::string responseBody = Json::writeString(writer, jsonResponse);
@@ -84,6 +116,11 @@ void handleUserRegistration(FCGX_Request& request) {
     std::string username = jsonData.get("username", "").asString();
     std::string password = jsonData.get("password", "").asString();
     int roleId = jsonData.get("role_id", 0).asInt();
+
+    // Restaurant table details
+    std::string restaurantName = jsonData.get("restaurantName", "").asString();
+    std::string contactNumber = jsonData.get("contactNumber", "").asString();
+    std::string address = jsonData.get("address", "").asString();
 
     if (username.empty() || password.empty() || roleId == 0) {
         sendResponse(request, 400, "Missing required fields");
@@ -118,14 +155,37 @@ void handleUserRegistration(FCGX_Request& request) {
 
     logger.log(Logger::LogLevel::INFO, "username : %s, password : %s, role_id : %d", username.c_str(), password_hash.c_str(), roleId);
 
-    // Call the addUser function from db.cpp
-    if (addUser(username, password_hash, roleId)) {
-        logger.log(Logger::LogLevel::INFO, "User registered successfully");
-        sendResponse(request, 201, "User registered successfully");
-    } else {
-        logger.log(Logger::LogLevel::INFO, "Error registering user");
-        sendResponse(request, 500, "Error registering user");
+    if(roleId == RESTAURANT_OWNER)
+    {
+        if(restaurantName.empty() || contactNumber.empty() || address.empty())
+        {
+            sendResponse(request, 400, "Missing required fields");
+            return;
+
+        }
+        
+        logger.log(Logger::LogLevel::INFO, "overloaded");
+        // Call the addUser function from db.cpp
+        if (addUser(username, password_hash, roleId)) {
+            logger.log(Logger::LogLevel::INFO, "User registered successfully");
+            sendResponse(request, 201, "User registered successfully");
+        } else {
+            logger.log(Logger::LogLevel::INFO, "Error registering user");
+            sendResponse(request, 500, "Error registering user");
+        }
     }
+    else
+    {
+        // Call the addUser function from db.cpp
+        if (addUser(username, password_hash, roleId, restaurantName, contactNumber, address)) {
+            logger.log(Logger::LogLevel::INFO, "User registered successfully");
+            sendResponse(request, 201, "User registered successfully");
+        } else {
+            logger.log(Logger::LogLevel::INFO, "Error registering user");
+            sendResponse(request, 500, "Error registering user");
+        }
+    }
+    
 }
 
 
